@@ -83,6 +83,40 @@ gulp.task('copy', () =>
     .pipe($.size({title: 'copy'}))
 );
 
+// Compile and automatically prefix vendor stylesheets
+gulp.task('vendor-css', () => {
+  const AUTOPREFIXER_BROWSERS = [
+    'ie >= 10',
+    'ie_mob >= 10',
+    'ff >= 30',
+    'chrome >= 34',
+    'safari >= 7',
+    'opera >= 23',
+    'ios >= 7',
+    'android >= 4.4',
+    'bb >= 10'
+  ];
+
+  // For best performance, don't add Sass partials to `gulp.src`
+  return gulp.src([
+    'app/lib/prism.css'
+  ])
+    .pipe($.newer('.tmp/styles'))
+    .pipe($.sourcemaps.init())
+    .pipe($.sass({
+      precision: 10
+    }).on('error', $.sass.logError))
+    .pipe($.autoprefixer(AUTOPREFIXER_BROWSERS))
+    // Minify and optimize styles with cssnano
+    .pipe($.if('*.css', $.cssnano()))
+    // Concatenate styles
+    .pipe($.if('*.css', $.concat('vendor.css')))
+    .pipe($.size({title: 'styles'}))
+    .pipe($.sourcemaps.write('./'))
+    .pipe(gulp.dest('dist/styles'))
+    .pipe(gulp.dest('.tmp/styles'));
+});
+
 // Compile and automatically prefix stylesheets
 gulp.task('styles', () => {
   const AUTOPREFIXER_BROWSERS = [
@@ -122,6 +156,26 @@ gulp.task('styles', () => {
     .pipe(gulp.dest('dist/styles'))
     .pipe(gulp.dest('.tmp/styles'));
 });
+
+// Concatenate and minify library JS files.
+gulp.task('vendor-js', () =>
+    gulp.src([
+      './app/lib/prism.js'
+      // Other scripts
+    ])
+      .pipe($.newer('.tmp/scripts'))
+      .pipe($.sourcemaps.init())
+      .pipe($.babel())
+      .pipe($.sourcemaps.write())
+      .pipe(gulp.dest('.tmp/scripts'))
+      .pipe($.concat('vendor.min.js'))
+      .pipe($.uglify({preserveComments: 'some'}))
+      // Output files
+      .pipe($.size({title: 'scripts'}))
+      .pipe($.sourcemaps.write('.'))
+      .pipe(gulp.dest('dist/scripts'))
+      .pipe(gulp.dest('.tmp/scripts'))
+);
 
 // Concatenate and minify JavaScript. Optionally transpiles ES2015 code to ES5.
 // to enable ES2015 support remove the line `"only": "gulpfile.babel.js",` in the
@@ -210,7 +264,7 @@ gulp.task('html', () => {
 gulp.task('clean', () => del(['.tmp', 'dist/*', 'app/third_party/', '!dist/.git'], {dot: true}));
 
 // Watch files for changes & reload
-gulp.task('serve', ['scripts', 'styles', 'html', 'third-party:dev'], () => {
+gulp.task('serve', ['scripts', 'vendor-js', 'vendor-css', 'styles', 'html', 'third-party:dev'], () => {
   browserSync({
     notify: false,
     // Customize the Browsersync console logging prefix
@@ -275,7 +329,7 @@ gulp.task('generate-pdf', async() => {
 // Build production files, the default task
 gulp.task('default', ['clean'], cb =>
   runSequence(
-    ['markdown', 'lint', 'html', 'scripts', 'images', 'copy'],
+    ['markdown', 'lint', 'html', 'scripts', 'vendor-js', 'vendor-css', 'images', 'copy'],
     'styles',
     ['third-party:prod', 'generate-service-worker'],
     'service-worker:prod',
