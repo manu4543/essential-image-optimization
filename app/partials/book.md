@@ -5,7 +5,7 @@
 In 2017, image optimization should be automated. It’s easy to forget, best practices change, and content that doesn’t go through a build pipeline can easily slip.
 To automate: Use [imagemin](https://github.com/imagemin/imagemin) or [libvips](https://github.com/jcupitt/libvips) for your build process. Many alternatives exist.
 
-Most CDNs (e.g. [Akamai](https://www.akamai.com/us/en/solutions/why-akamai/image-management.jsp)) and third-party solutions like [Cloudinary](https://cloudinary.com), [imgix](https://imgix.com), [Fastly’s Image Optimizer](https://www.fastly.com/io/), [Instart Logic’s SmartVision](https://www.instartlogic.com/technology/machine-learning/smartvision) or [ImageOptim API](https://imageoptim.com/api) offer comprehensive automated image optimization solutions.
+Most CDNs (e.g. [Akamai](https://www.akamai.com/us/en/solutions/why-akamai/image-management.jsp)) and third-party solutions like [Cloudinary](https://cloudinary.com), [imgix](https://imgix.com), [ImageKit](https://imagekit.io), [Fastly’s Image Optimizer](https://www.fastly.com/io/), [Instart Logic’s SmartVision](https://www.instartlogic.com/technology/machine-learning/smartvision) or [ImageOptim API](https://imageoptim.com/api) offer comprehensive automated image optimization solutions.
 
 The amount of time you’ll spend reading blog posts and tweaking your configuration is greater than the monthly fee for a service (Cloudinary has a [free](http://cloudinary.com/pricing) tier). If you don’t want to outsource this work for cost or latency concerns, the open-source options above are solid. Projects like [Imageflow](https://github.com/imazen/imageflow) or [Thumbor](https://github.com/thumbor/thumbor) enable self-hosted alternatives.
 
@@ -304,7 +304,12 @@ As Ilya Grigorik notes in his excellent [image optimization guide](https://devel
 
 [Vector graphics](https://en.wikipedia.org/wiki/Vector_graphics) use points, lines and polygons to represent images and formats using simple geometric shapes (e.g. logos) offering a high-resolution and zoom like SVG handle this use case better.
 
-The wrong format can cost you. The logical flow for choosing the right format can be fraught with peril so experiment with the savings other formats can afford with care. 
+As a rule of thumb:
+* Use JPEG format for all images that contain a natural scene or photograph where variation in colour and intensity is smooth.
+* Use PNG format for any image that needs transparency or for images with text & objects with sharp contrast edges like logos.
+* Use GIF format for images that contain animations.
+
+The wrong format can cost you. The logical flow for choosing the right format can be fraught with peril so experiment with the savings other formats can afford with care. Image CDN like ImageKit [automatically selects the best image format](https://imagekit.io/blog/automatic-best-image-format-selection/) depending upon image content and supported formats in device.
 
 Jeremy Wagner has covered [trade-offs](http://jlwagner.net/talks/these-images/#/2/2) worth considering when evaluating formats in his image optimization talks.
 
@@ -1447,9 +1452,36 @@ Here is some sample HTML:
 </picture>
 ```
 
+**Configuring CDN to cache & serve WebP**
+
+If you are serving images from a CDN then it should correctly cache & serve differnt assets depending upon WebP support in requesting device. After doing necessary server configuration and application code changes, test your setup with CDN on different devices before making changes on production website. Let's cover configuration settings for two majorly used CDNs:
+
+**Amazon CloudFront** - You can easily [configure CloudFront to Cache Objects Based on Request Headers](http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/header-caching.html).
+
+<figure>
+<picture>
+
+<source
+        data-srcset="https://ik.imagekit.io/demo/img/cf-header-whitelist.png" />
+
+<img
+        class="lazyload"
+        data-src="https://ik.imagekit.io/demo/img/cf-header-whitelist.png"
+        alt="Configuring CloudFront to cache object based on value of Accept request header."
+         />
+<noscript>
+  <img src="https://ik.imagekit.io/demo/img/cf-header-whitelist.png"/>
+</noscript>
+</picture>
+<figcaption>Configuring CloudFront to cache object based on Accept request header value.</figcaption>
+</figure>
+
+**Akamai** - With the Cache ID Modification behavior (only available with Advanced Cache Optimization module) you can modify caching behavour to include request headers besides filename and path. You can easily use this to include value of Accept request header in the cache key. If this module is not enabled for your account, then follow this [guide to modify cache key](https://imagekit.io/blog/modify-cache-key-in-akamai-based-upon-request-header-value/) based upon Accept header value.
+
+
 **Automatic CDN conversion to WebP**
 
-Some CDNs support automated conversion to WebP and can use client hints to serve up WebP images [whenever possible](http://cloudinary.com/documentation/responsive_images#automating_responsive_images_with_client_hints). Check with your CDN to see if WebP support is included in their service. You may have an easy solution just waiting for you.
+Some CDN supports [automatic conversion to WebP](https://imagekit.io/blog/automatic-best-image-format-selection/) and can use client hints to serve up WebP images [whenever possible](http://cloudinary.com/documentation/responsive_images#automating_responsive_images_with_client_hints). Check with your CDN to see if WebP support is included in their service. You may have an easy solution just waiting for you.
 
 **WordPress WebP support**
 
